@@ -1,6 +1,9 @@
 (c) 2019 Gumstix Inc.
+
 Author:  Keith Lee
+
 Contact: keith.lee@gumstix.com
+
 
 # l4t-patches
 Patches needed for Linux-for-Tegra on Gumstix Boards
