@@ -19,13 +19,15 @@ hardware to operate correctly.
 
 ## Usage
 
-to apply the patches, clone the L4T repositores using Nvidia's script and then
-issue the following commands:
+to apply the patches, install NVIDIA's JetPack V3.3 and enter the following commands
+into the console:
 
-    cd <path-to>/Linux_for_Tegra
-    ./source_sync.sh -t tegra-l4t-r28.2.1
-    cd <this-folder>
-    ./kernel_patch.sh <path to>/Linux_for_Tegra/sources
+    git clone https://github.com/gumstix/l4t_patches.git
+    cd l4t_patches
+    ./source_sync -d <path-to-jetpack>/64_TX2/Linux_for_Tegra/sources -t tegra-l4t-r28.2.1
+
+This will clone all of NVIDIA's repositories and apply all patches in the `patches` folder
+to the correct locations in the file system.
 
 ## Adding patches
 
@@ -33,3 +35,12 @@ The `patches` folder in this repository contains the patch files for each modifi
 repo. The file name of each patch determines which repo to which the patch should
 be applied.  For instance, a patch to the Linux kernel, located at `sources/kernel/kernel-4.4/`
 would be named `patches/kernel+kernel-4.4.patch`. 
+
+
+## Patch List
+
+Currently, this repo contains patches for:
+
+1. kernel/kernel-4.4.git
+  * Adds drivers for OV5640 and OV5670 cameras
+  * Modifies Sony IMX214 driver

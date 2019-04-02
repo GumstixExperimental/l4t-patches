@@ -24,14 +24,17 @@ do
   fi
   subpath=${subpath:0:$len}
   paths=$(echo $subpath | tr "+" "\n")
-  dest=$src_path/$(join_by / ${paths[@]})
+  dest=$(realpath $src_path/$(join_by / ${paths[@]}))
   pushd $dest
+  echo "We are going to $dest"
   echo "We are at $PWD"
   if [[ $PWD == $dest ]]; then
     git apply "$fullpath" --verbose
     popd
   else
     echo "ERROR, I'm not where i should be!"
+    echo "dest = $dest"
+    echo "PWD = $PWD"
   fi
   if [[ $PWD != $swd ]]; then
     echo "ERROR, I didn't make it home!"
