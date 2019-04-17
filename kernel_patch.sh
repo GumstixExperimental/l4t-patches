@@ -24,7 +24,7 @@ do
   fi
   subpath=${subpath:0:$len}
   paths=$(echo $subpath | tr "+" "\n")
-  dest=$src_path/$(join_by / ${paths[@]})
+  dest=$(realpath $src_path/$(join_by / ${paths[@]}))
   pushd $dest
   echo "We are at $PWD"
   if [[ $PWD == $dest ]]; then
@@ -35,7 +35,5 @@ do
   fi
   if [[ $PWD != $swd ]]; then
     echo "ERROR, I didn't make it home!"
-  else
-    echo "I'm home"
   fi
 done

@@ -327,7 +327,6 @@ for ((i=0; i < NSOURCES; i++)); do
 		fi
 	fi
 done
-echo $LDK_DIR
-# ./kernel_patch.sh $LDK_DIR
+./kernel_patch.sh "${LDK_DIR}"
 
 exit $GRET
