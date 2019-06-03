@@ -144,6 +144,406 @@ index f15565b..6142277 100644
  obj-y					+= compass/
  obj-y					+= mpu/
  obj-y					+= pressure/
+diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
+index f94dfed..cb0e8d5 100644
+--- a/drivers/media/i2c/Kconfig
++++ b/drivers/media/i2c/Kconfig
+@@ -565,6 +565,35 @@ config VIDEO_OV5693
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called ov5693.
+ 
++config VIDEO_OV5670
++	tristate "OV5670 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This is a Video4Linux2 sensor-level driver for the OmniVision
++	  OV5670 camera.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called ov5670.
++
++config VIDEO_OV5640
++	tristate "OV5640 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This is a Video4Linux2 sensor-level driver for the OmniVision
++	  OV5640 camera.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called ov5640.
++
++config VIDEO_IMX214
++        tristate "IMX214 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This driver supports IMX214 camera sensor from Sony
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called imx214.
++
+ config VIDEO_IMX219
+         tristate "IMX219 camera sensor support"
+ 	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+diff --git a/drivers/media/i2c/Makefile b/drivers/media/i2c/Makefile
+index 5f3a2fa..fc5ddc9 100644
+--- a/drivers/media/i2c/Makefile
++++ b/drivers/media/i2c/Makefile
+@@ -88,6 +88,9 @@ obj-$(CONFIG_VIDEO_OV10823) += ov10823.o
+ obj-$(CONFIG_VIDEO_OV23850) += ov23850.o
+ obj-$(CONFIG_VIDEO_LC898212) += lc898212.o
+ obj-$(CONFIG_VIDEO_OV5693) += ov5693.o
++obj-$(CONFIG_VIDEO_OV5670) += ov5670.o
++obj-$(CONFIG_VIDEO_OV5640) += ov5640.o
++obj-$(CONFIG_VIDEO_IMX214) += imx214.o
+ obj-$(CONFIG_VIDEO_IMX219) += imx219.o
+ obj-$(CONFIG_VIDEO_IMX274) += imx274.o
+ obj-$(CONFIG_VIDEO_TC358840)	+= tc358840.o
+diff --git a/arch/arm64/configs/tegra18_defconfig b/arch/arm64/configs/tegra18_defconfig
+index a4974a1..f5c1709 100644
+--- a/arch/arm64/configs/tegra18_defconfig
++++ b/arch/arm64/configs/tegra18_defconfig
+@@ -367,6 +367,9 @@ CONFIG_VIDEO_CAMERA=y
+ # CONFIG_MEDIA_SUBDRV_AUTOSELECT is not set
+ CONFIG_VIDEO_OV10823=y
+ CONFIG_VIDEO_OV23850=y
++CONFIG_VIDEO_OV5640=y
++CONFIG_VIDEO_OV5670=y
++CONFIG_VIDEO_IMX214=y
+ CONFIG_VIDEO_LC898212=y
+ CONFIG_VIDEO_OV5693=y
+ CONFIG_VIDEO_IMX274=y
+@@ -629,3 +632,4 @@ CONFIG_CRYPTO_GHASH_ARM64_CE=y
+ CONFIG_CRYPTO_AES_ARM64_CE_CCM=y
+ CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
+ CONFIG_CRYPTO_AES_ARM64_NEON_BLK=y
++CONFIG_SI7020=m
+diff --git a/drivers/iio/accel/st_accel_core.c b/drivers/iio/accel/st_accel_core.c
+index 197a08b..be64456 100644
+--- a/drivers/iio/accel/st_accel_core.c
++++ b/drivers/iio/accel/st_accel_core.c
+@@ -41,7 +41,7 @@
+ #define ST_ACCEL_FS_AVL_16G			16
+ 
+ /* CUSTOM VALUES FOR SENSOR 1 */
+-#define ST_ACCEL_1_WAI_EXP			0x33
++#define ST_ACCEL_1_WAI_EXP			0x49
+ #define ST_ACCEL_1_ODR_ADDR			0x20
+ #define ST_ACCEL_1_ODR_MASK			0xf0
+ #define ST_ACCEL_1_ODR_AVL_1HZ_VAL		0x01
+diff --git a/drivers/iio/gyro/st_gyro.h b/drivers/iio/gyro/st_gyro.h
+index 5353d63..d18bbb3 100644
+--- a/drivers/iio/gyro/st_gyro.h
++++ b/drivers/iio/gyro/st_gyro.h
+@@ -21,6 +21,7 @@
+ #define L3GD20_GYRO_DEV_NAME		"l3gd20"
+ #define L3G4IS_GYRO_DEV_NAME		"l3g4is_ui"
+ #define LSM330_GYRO_DEV_NAME		"lsm330_gyro"
++#define L3GD20H_GYRO_DEV_NAME   "l3gd20h"
+ 
+ /**
+  * struct st_sensors_platform_data - gyro platform data
+diff --git a/drivers/iio/gyro/st_gyro_core.c b/drivers/iio/gyro/st_gyro_core.c
+index 02eddce..265e7f9 100644
+--- a/drivers/iio/gyro/st_gyro_core.c
++++ b/drivers/iio/gyro/st_gyro_core.c
+@@ -256,7 +256,7 @@ static const struct st_sensor_settings st_gyro_sensors_settings[] = {
+ 		.wai = ST_GYRO_3_WAI_EXP,
+ 		.wai_addr = ST_SENSORS_DEFAULT_WAI_ADDRESS,
+ 		.sensors_supported = {
+-			[0] = L3GD20_GYRO_DEV_NAME,
++			[0] = L3GD20H_GYRO_DEV_NAME,
+ 		},
+ 		.ch = (struct iio_chan_spec *)st_gyro_16bit_channels,
+ 		.odr = {
+diff --git a/drivers/iio/gyro/st_gyro_i2c.c b/drivers/iio/gyro/st_gyro_i2c.c
+index 6848451..7ba4c6c 100644
+--- a/drivers/iio/gyro/st_gyro_i2c.c
++++ b/drivers/iio/gyro/st_gyro_i2c.c
+@@ -40,6 +40,14 @@ static const struct of_device_id st_gyro_of_match[] = {
+ 		.compatible = "st,l3gd20-gyro",
+ 		.data = L3GD20_GYRO_DEV_NAME,
+ 	},
++	{	
++		.compatible = "st,l3gd20h-gyr",
++		.data = L3GD20H_GYRO_DEV_NAME,
++	},
++	{
++		.compatible = "st,l3gd20h-gyro",
++		.data = L3GD20H_GYRO_DEV_NAME,
++	},
+ 	{
+ 		.compatible = "st,l3g4is-gyro",
+ 		.data = L3G4IS_GYRO_DEV_NAME,
+@@ -93,6 +101,7 @@ static const struct i2c_device_id st_gyro_id_table[] = {
+ 	{ L3GD20_GYRO_DEV_NAME },
+ 	{ L3G4IS_GYRO_DEV_NAME },
+ 	{ LSM330_GYRO_DEV_NAME },
++	{ L3GD20H_GYRO_DEV_NAME },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(i2c, st_gyro_id_table);
+diff --git a/drivers/iio/gyro/st_gyro_spi.c b/drivers/iio/gyro/st_gyro_spi.c
+index d2b7a5f..441f823 100644
+--- a/drivers/iio/gyro/st_gyro_spi.c
++++ b/drivers/iio/gyro/st_gyro_spi.c
+@@ -54,6 +54,7 @@ static const struct spi_device_id st_gyro_id_table[] = {
+ 	{ L3GD20_GYRO_DEV_NAME },
+ 	{ L3G4IS_GYRO_DEV_NAME },
+ 	{ LSM330_GYRO_DEV_NAME },
++	{ L3GD20H_GYRO_DEV_NAME },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(spi, st_gyro_id_table);
+diff --git a/drivers/iio/magnetometer/st_magn_core.c b/drivers/iio/magnetometer/st_magn_core.c
+index b27f014..d408358 100644
+--- a/drivers/iio/magnetometer/st_magn_core.c
++++ b/drivers/iio/magnetometer/st_magn_core.c
+@@ -87,7 +87,7 @@
+ #define ST_MAGN_0_MULTIREAD_BIT			false
+ 
+ /* CUSTOM VALUES FOR SENSOR 1 */
+-#define ST_MAGN_1_WAI_EXP			0x3c
++#define ST_MAGN_1_WAI_EXP			0x49
+ #define ST_MAGN_1_ODR_ADDR			0x00
+ #define ST_MAGN_1_ODR_MASK			0x1c
+ #define ST_MAGN_1_ODR_AVL_1HZ_VAL		0x00
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 0325460..8bc2043 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -812,6 +812,19 @@ config INPUT_DRV2667_HAPTICS
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called drv2667-haptics.
+ 
++config INPUT_LSM303D
++	tristate "ST LSM303D acceleromter/magnetometer support"
++	depends on INPUT && I2C
++	help
++	  Say Y to enable support for the ST LSM303D accelerometer and
++	  magnetometer combo driver.
++
++config INPUT_L3GD20H
++	tristate "ST L3GD20H gyroscope support"
++	depends on INPUT && I2C
++	help
++	  Say Y to enable support for the ST L3GD20H gyroscope driver.
++
+ source	"drivers/input/misc/compass/Kconfig"
+ source	"drivers/input/misc/mpu/Kconfig"
+ source	"drivers/input/misc/pressure/Kconfig"
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index f15565b..6142277 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -77,6 +77,8 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
++obj-$(CONFIG_INPUT_LSM303D)		+= lsm303d.o
++obj-$(CONFIG_INPUT_L3GD20H)		+= l3gd20h.o
+ obj-y					+= compass/
+ obj-y					+= mpu/
+ obj-y					+= pressure/
+diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
+index f94dfed..cb0e8d5 100644
+--- a/drivers/media/i2c/Kconfig
++++ b/drivers/media/i2c/Kconfig
+@@ -565,6 +565,35 @@ config VIDEO_OV5693
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called ov5693.
+ 
++config VIDEO_OV5670
++	tristate "OV5670 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This is a Video4Linux2 sensor-level driver for the OmniVision
++	  OV5670 camera.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called ov5670.
++
++config VIDEO_OV5640
++	tristate "OV5640 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This is a Video4Linux2 sensor-level driver for the OmniVision
++	  OV5640 camera.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called ov5640.
++
++config VIDEO_IMX214
++        tristate "IMX214 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This driver supports IMX214 camera sensor from Sony
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called imx214.
++
+ config VIDEO_IMX219
+         tristate "IMX219 camera sensor support"
+ 	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+diff --git a/drivers/media/i2c/Makefile b/drivers/media/i2c/Makefile
+index 5f3a2fa..fc5ddc9 100644
+--- a/drivers/media/i2c/Makefile
++++ b/drivers/media/i2c/Makefile
+@@ -88,6 +88,9 @@ obj-$(CONFIG_VIDEO_OV10823) += ov10823.o
+ obj-$(CONFIG_VIDEO_OV23850) += ov23850.o
+ obj-$(CONFIG_VIDEO_LC898212) += lc898212.o
+ obj-$(CONFIG_VIDEO_OV5693) += ov5693.o
++obj-$(CONFIG_VIDEO_OV5670) += ov5670.o
++obj-$(CONFIG_VIDEO_OV5640) += ov5640.o
++obj-$(CONFIG_VIDEO_IMX214) += imx214.o
+ obj-$(CONFIG_VIDEO_IMX219) += imx219.o
+ obj-$(CONFIG_VIDEO_IMX274) += imx274.o
+ obj-$(CONFIG_VIDEO_TC358840)	+= tc358840.o
+diff --git a/arch/arm64/configs/tegra18_defconfig b/arch/arm64/configs/tegra18_defconfig
+index a4974a1..f5c1709 100644
+--- a/arch/arm64/configs/tegra18_defconfig
++++ b/arch/arm64/configs/tegra18_defconfig
+@@ -367,6 +367,9 @@ CONFIG_VIDEO_CAMERA=y
+ # CONFIG_MEDIA_SUBDRV_AUTOSELECT is not set
+ CONFIG_VIDEO_OV10823=y
+ CONFIG_VIDEO_OV23850=y
++CONFIG_VIDEO_OV5640=y
++CONFIG_VIDEO_OV5670=y
++CONFIG_VIDEO_IMX214=y
+ CONFIG_VIDEO_LC898212=y
+ CONFIG_VIDEO_OV5693=y
+ CONFIG_VIDEO_IMX274=y
+@@ -629,3 +632,4 @@ CONFIG_CRYPTO_GHASH_ARM64_CE=y
+ CONFIG_CRYPTO_AES_ARM64_CE_CCM=y
+ CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
+ CONFIG_CRYPTO_AES_ARM64_NEON_BLK=y
++CONFIG_SI7020=m
+diff --git a/drivers/iio/accel/st_accel_core.c b/drivers/iio/accel/st_accel_core.c
+index 197a08b..be64456 100644
+--- a/drivers/iio/accel/st_accel_core.c
++++ b/drivers/iio/accel/st_accel_core.c
+@@ -41,7 +41,7 @@
+ #define ST_ACCEL_FS_AVL_16G			16
+ 
+ /* CUSTOM VALUES FOR SENSOR 1 */
+-#define ST_ACCEL_1_WAI_EXP			0x33
++#define ST_ACCEL_1_WAI_EXP			0x49
+ #define ST_ACCEL_1_ODR_ADDR			0x20
+ #define ST_ACCEL_1_ODR_MASK			0xf0
+ #define ST_ACCEL_1_ODR_AVL_1HZ_VAL		0x01
+diff --git a/drivers/iio/gyro/st_gyro.h b/drivers/iio/gyro/st_gyro.h
+index 5353d63..d18bbb3 100644
+--- a/drivers/iio/gyro/st_gyro.h
++++ b/drivers/iio/gyro/st_gyro.h
+@@ -21,6 +21,7 @@
+ #define L3GD20_GYRO_DEV_NAME		"l3gd20"
+ #define L3G4IS_GYRO_DEV_NAME		"l3g4is_ui"
+ #define LSM330_GYRO_DEV_NAME		"lsm330_gyro"
++#define L3GD20H_GYRO_DEV_NAME   "l3gd20h"
+ 
+ /**
+  * struct st_sensors_platform_data - gyro platform data
+diff --git a/drivers/iio/gyro/st_gyro_core.c b/drivers/iio/gyro/st_gyro_core.c
+index 02eddce..265e7f9 100644
+--- a/drivers/iio/gyro/st_gyro_core.c
++++ b/drivers/iio/gyro/st_gyro_core.c
+@@ -256,7 +256,7 @@ static const struct st_sensor_settings st_gyro_sensors_settings[] = {
+ 		.wai = ST_GYRO_3_WAI_EXP,
+ 		.wai_addr = ST_SENSORS_DEFAULT_WAI_ADDRESS,
+ 		.sensors_supported = {
+-			[0] = L3GD20_GYRO_DEV_NAME,
++			[0] = L3GD20H_GYRO_DEV_NAME,
+ 		},
+ 		.ch = (struct iio_chan_spec *)st_gyro_16bit_channels,
+ 		.odr = {
+diff --git a/drivers/iio/gyro/st_gyro_i2c.c b/drivers/iio/gyro/st_gyro_i2c.c
+index 6848451..7ba4c6c 100644
+--- a/drivers/iio/gyro/st_gyro_i2c.c
++++ b/drivers/iio/gyro/st_gyro_i2c.c
+@@ -40,6 +40,14 @@ static const struct of_device_id st_gyro_of_match[] = {
+ 		.compatible = "st,l3gd20-gyro",
+ 		.data = L3GD20_GYRO_DEV_NAME,
+ 	},
++	{	
++		.compatible = "st,l3gd20h-gyr",
++		.data = L3GD20H_GYRO_DEV_NAME,
++	},
++	{
++		.compatible = "st,l3gd20h-gyro",
++		.data = L3GD20H_GYRO_DEV_NAME,
++	},
+ 	{
+ 		.compatible = "st,l3g4is-gyro",
+ 		.data = L3G4IS_GYRO_DEV_NAME,
+@@ -93,6 +101,7 @@ static const struct i2c_device_id st_gyro_id_table[] = {
+ 	{ L3GD20_GYRO_DEV_NAME },
+ 	{ L3G4IS_GYRO_DEV_NAME },
+ 	{ LSM330_GYRO_DEV_NAME },
++	{ L3GD20H_GYRO_DEV_NAME },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(i2c, st_gyro_id_table);
+diff --git a/drivers/iio/gyro/st_gyro_spi.c b/drivers/iio/gyro/st_gyro_spi.c
+index d2b7a5f..441f823 100644
+--- a/drivers/iio/gyro/st_gyro_spi.c
++++ b/drivers/iio/gyro/st_gyro_spi.c
+@@ -54,6 +54,7 @@ static const struct spi_device_id st_gyro_id_table[] = {
+ 	{ L3GD20_GYRO_DEV_NAME },
+ 	{ L3G4IS_GYRO_DEV_NAME },
+ 	{ LSM330_GYRO_DEV_NAME },
++	{ L3GD20H_GYRO_DEV_NAME },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(spi, st_gyro_id_table);
+diff --git a/drivers/iio/magnetometer/st_magn_core.c b/drivers/iio/magnetometer/st_magn_core.c
+index b27f014..d408358 100644
+--- a/drivers/iio/magnetometer/st_magn_core.c
++++ b/drivers/iio/magnetometer/st_magn_core.c
+@@ -87,7 +87,7 @@
+ #define ST_MAGN_0_MULTIREAD_BIT			false
+ 
+ /* CUSTOM VALUES FOR SENSOR 1 */
+-#define ST_MAGN_1_WAI_EXP			0x3c
++#define ST_MAGN_1_WAI_EXP			0x49
+ #define ST_MAGN_1_ODR_ADDR			0x00
+ #define ST_MAGN_1_ODR_MASK			0x1c
+ #define ST_MAGN_1_ODR_AVL_1HZ_VAL		0x00
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 0325460..8bc2043 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -812,6 +812,19 @@ config INPUT_DRV2667_HAPTICS
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called drv2667-haptics.
+ 
++config INPUT_LSM303D
++	tristate "ST LSM303D acceleromter/magnetometer support"
++	depends on INPUT && I2C
++	help
++	  Say Y to enable support for the ST LSM303D accelerometer and
++	  magnetometer combo driver.
++
++config INPUT_L3GD20H
++	tristate "ST L3GD20H gyroscope support"
++	depends on INPUT && I2C
++	help
++	  Say Y to enable support for the ST L3GD20H gyroscope driver.
++
+ source	"drivers/input/misc/compass/Kconfig"
+ source	"drivers/input/misc/mpu/Kconfig"
+ source	"drivers/input/misc/pressure/Kconfig"
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index f15565b..6142277 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -77,6 +77,8 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
++obj-$(CONFIG_INPUT_LSM303D)		+= lsm303d.o
++obj-$(CONFIG_INPUT_L3GD20H)		+= l3gd20h.o
+ obj-y					+= compass/
+ obj-y					+= mpu/
+ obj-y					+= pressure/
 diff --git a/drivers/input/misc/l3gd20h.c b/drivers/input/misc/l3gd20h.c
 new file mode 100644
 index 0000000..5c6b035
@@ -5705,6 +6105,60 @@ index 0000000..d6bb9a0
 +
 +#endif	/* __KERNEL__ */
 +#endif	/* __LSM303D_H__ */
+diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
+index f94dfed..cb0e8d5 100644
+--- a/drivers/media/i2c/Kconfig
++++ b/drivers/media/i2c/Kconfig
+@@ -565,6 +565,35 @@ config VIDEO_OV5693
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called ov5693.
+ 
++config VIDEO_OV5670
++	tristate "OV5670 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This is a Video4Linux2 sensor-level driver for the OmniVision
++	  OV5670 camera.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called ov5670.
++
++config VIDEO_OV5640
++	tristate "OV5640 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This is a Video4Linux2 sensor-level driver for the OmniVision
++	  OV5640 camera.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called ov5640.
++
++config VIDEO_IMX214
++        tristate "IMX214 camera sensor support"
++	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
++	---help---
++	  This driver supports IMX214 camera sensor from Sony
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called imx214.
++
+ config VIDEO_IMX219
+         tristate "IMX219 camera sensor support"
+ 	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+diff --git a/drivers/media/i2c/Makefile b/drivers/media/i2c/Makefile
+index 5f3a2fa..fc5ddc9 100644
+--- a/drivers/media/i2c/Makefile
++++ b/drivers/media/i2c/Makefile
+@@ -88,6 +88,9 @@ obj-$(CONFIG_VIDEO_OV10823) += ov10823.o
+ obj-$(CONFIG_VIDEO_OV23850) += ov23850.o
+ obj-$(CONFIG_VIDEO_LC898212) += lc898212.o
+ obj-$(CONFIG_VIDEO_OV5693) += ov5693.o
++obj-$(CONFIG_VIDEO_OV5670) += ov5670.o
++obj-$(CONFIG_VIDEO_OV5640) += ov5640.o
++obj-$(CONFIG_VIDEO_IMX214) += imx214.o
+ obj-$(CONFIG_VIDEO_IMX219) += imx219.o
+ obj-$(CONFIG_VIDEO_IMX274) += imx274.o
+ obj-$(CONFIG_VIDEO_TC358840)	+= tc358840.o
 diff --git a/drivers/media/i2c/imx214_mode_tbls.h b/drivers/media/i2c/imx214_mode_tbls.h
 new file mode 100755
 index 0000000..5abc1f5
