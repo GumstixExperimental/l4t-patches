@@ -18,7 +18,7 @@ index a4974a1..39b57f7 100644
  CONFIG_CRYPTO_AES_ARM64_NEON_BLK=y
 +CONFIG_SI7020=m
 +CONFIG_INPUT_LSM303D=m
-+CONFIG_INPUT_L3G20H=m
++CONFIG_INPUT_L3GD20H=m
 \ No newline at end of file
 diff --git a/drivers/iio/accel/st_accel_core.c b/drivers/iio/accel/st_accel_core.c
 index 197a08b..be64456 100644
